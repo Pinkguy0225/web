@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>moment</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: #e9e9e9; font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; color: #111; }
+  .app { max-width: 430px; height: 100%; margin: 0 auto; background: #fff; display: flex; flex-direction: column; position: relative; }
+  svg { width: 26px; height: 26px; fill: none; stroke: #111; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; display: block; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid #efefef; }
+  .logo { font-family: "Snell Roundhand", "Segoe Script", "Brush Script MT", cursive; font-size: 28px; font-weight: 700; letter-spacing: .5px; }
+  .topbar .icons { display: flex; gap: 20px; }
+
+  .feed { flex: 1; overflow-y: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .feed::-webkit-scrollbar { display: none; }
+
+  .stories { display: flex; gap: 14px; padding: 12px 12px 10px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid #efefef; }
+  .stories::-webkit-scrollbar { display: none; }
+  .story { flex: none; width: 68px; text-align: center; font-size: 11px; color: #333; }
+  .story .ring { width: 66px; height: 66px; margin: 0 auto 4px; }
+  .story span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .ring { border-radius: 50%; padding: 2px; background: linear-gradient(135deg, #3ac6b4, #4a7dff); }
+  .ring div { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .story .ring div { font-size: 20px; }
+
+  .post { padding-bottom: 6px; }
+  .post-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+  .post-head .ring { width: 36px; height: 36px; flex: none; }
+  .post-head .ring div { font-size: 12px; }
+  .who { flex: 1; line-height: 1.25; }
+  .who b { font-size: 14px; }
+  .who span { display: block; font-size: 12px; color: #555; }
+
+  .carousel-wrap { position: relative; }
+  .carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .carousel::-webkit-scrollbar { display: none; }
+  .card { flex: 0 0 100%; aspect-ratio: 4 / 5; scroll-snap-align: start; scroll-snap-stop: always; position: relative; display: flex; flex-direction: column; justify-content: center; padding: 36px 30px; color: #fff; overflow: hidden; user-select: none; }
+  .card.square { aspect-ratio: 1 / 1; }
+  .card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .card .tag { font-size: 13px; font-weight: 700; letter-spacing: 2px; opacity: .8; margin-bottom: 14px; }
+  .card h2 { font-size: 30px; line-height: 1.3; font-weight: 800; word-break: keep-all; white-space: pre-line; }
+  .card p { margin-top: 16px; font-size: 15.5px; line-height: 1.6; opacity: .92; word-break: keep-all; }
+  .card.over { justify-content: flex-end; padding-bottom: 40px; }
+  .card.over::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.88) 0%, rgba(0,0,0,.55) 45%, rgba(0,0,0,.15) 100%); }
+  .card.over > :not(img) { position: relative; z-index: 1; }
+  .card .emoji { font-size: 110px; text-align: center; }
+  .counter { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,.6); color: #fff; font-size: 12px; padding: 5px 10px; border-radius: 20px; }
+  .bigheart { position: absolute; left: 50%; top: 50%; width: 96px; height: 96px; transform: translate(-50%,-50%) scale(0); opacity: 0; pointer-events: none; fill: #fff; stroke: none; filter: drop-shadow(0 2px 8px rgba(0,0,0,.3)); }
+  .bigheart.pop { animation: pop .8s ease; }
+  @keyframes pop { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 20% { transform: translate(-50%,-50%) scale(1.2); opacity: 1; } 35% { transform: translate(-50%,-50%) scale(1); } 75% { opacity: 1; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 0; } }
+
+  .actions { display: flex; align-items: center; padding: 10px 12px 6px; position: relative; }
+  .actions .left { display: flex; gap: 16px; }
+  .actions button { background: none; border: 0; cursor: pointer; }
+  .dots { position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; }
+  .dots i { width: 6px; height: 6px; border-radius: 50%; background: #c7c7c7; transition: .2s; }
+  .dots i.on { background: #3a8bff; }
+  .actions .save { margin-left: auto; }
+  .liked svg { fill: #ff3b4e; stroke: #ff3b4e; }
+  .saved svg { fill: #111; }
+
+  .meta { padding: 0 14px 18px; font-size: 14px; line-height: 1.5; }
+  .meta .likes { font-weight: 700; }
+  .meta .caption { margin-top: 4px; white-space: pre-line; word-break: keep-all; }
+  .meta .caption b { margin-right: 6px; }
+  .meta .hash { color: #1d5fbf; }
+  .meta .comments, .meta .time { color: #777; margin-top: 6px; }
+  .meta .time { font-size: 12px; }
+
+  .end { text-align: center; color: #999; font-size: 13px; padding: 30px 0 50px; }
+
+  .nav { display: flex; justify-content: space-around; align-items: center; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid #efefef; }
+  .nav .me { width: 26px; height: 26px; border-radius: 50%; background: #bbb url("profile1.jpg") center / cover no-repeat; border: 1.5px solid #111; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="logo">moment</div>
+    <div class="icons">
+      <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>
+    </div>
+  </header>
+
+  <main class="feed" id="feed">
+    <div class="stories" id="stories"></div>
+  </main>
+
+  <nav class="nav">
+    <svg viewBox="0 0 24 24"><path d="M3.5 11 12 3.5 20.5 11v9.5h-6v-6h-5v6h-6z" fill="#111"/></svg>
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+    <svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/></svg>
+    <svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="m10 8.5 5.5 3.5-5.5 3.5z"/></svg>
+    <div class="me"></div>
+  </nav>
+</div>
+
+<script>
+/* ===================== 여기만 고치면 됩니다 =====================
+   - POSTS 안의 순서가 곧 화면에 나오는 순서입니다. 통째로 잘라서 옮기면 순서가 바뀝니다.
+   - cards 의 image 에 폴더에 넣은 사진 파일 이름을 적으면 그 사진이 나옵니다 (예: "card1.jpg").
+     image 를 비워두면 글자(tag/title/text)나 이모지(emoji)로 만든 임시 그림이 나옵니다.
+   - cards 가 2장 이상이면 옆으로 넘기는 게시글이 됩니다.
+================================================================ */
+const STORIES = [
+  { name: "내 스토리", text: "", color: '#9aa3b2 url("profile1.jpg") center / cover no-repeat' },
+  { name: "haneul_02", text: "하", color: "#d9734e" },
+  { name: "minjun.k", text: "민", color: "#3d6fd6" },
+  { name: "cafe_onda", text: "☕", color: "#6b4a3a" },
+  { name: "soyeon__", text: "소", color: "#b0508f" },
+  { name: "run_crew", text: "🏃", color: "#2f8f6a" },
+  { name: "jiwoo.film", text: "지", color: "#444a66" }
+];
+
+const POSTS = [
+  {
+    username: "soyeon__", subtitle: "", avatarText: "소", avatarColor: "#b0508f",
+    likes: 311, comments: 18, time: "25분 전",
+    caption: "우리집 막내 자랑 🐶", hashtags: "#강아지 #멍스타",
+    cards: [ { image: "dog.jpg", bg: "#ddd", square: true } ]
+  },
+  {
+    username: "haneul_02", subtitle: "", avatarText: "하", avatarColor: "#d9734e",
+    likes: 128, comments: 9, time: "1시간 전",
+    caption: "오늘의 도시 🏙️", hashtags: "#도시 #산책",
+    cards: [ { image: "city.jpg", bg: "#ddd", square: true } ]
+  },
+  /* ---------- ★ 카드뉴스 게시글 (배우가 보는 게시글) ---------- */
+  {
+    username: "daily_cardnews", subtitle: "미제사건 파일", avatarText: "DC", avatarColor: "#1f2a44",
+    likes: 12847, comments: 936, time: "2시간 전",
+    caption: "[미제사건 파일 #12] 6년 전 오늘, 약속에 나간다며 집을 나선 고등학생 박장우.\n동네 CCTV에 찍힌 모습을 마지막으로 돌아오지 않았습니다.\n작은 기억이라도 좋습니다. 제보는 프로필 링크로 보내주세요.",
+    hashtags: "#박장우 #실종 #실종6년 #미제사건 #제보",
+    // image 에 사진 파일 이름을 적으면 사진 위에 글자가 겹쳐서 나옵니다 (예: "card1.jpg")
+    cards: [
+      { image: "news1.jpg", bg: "#14171f", tag: "미제사건 파일 #12", title: "6년 전 오늘,\n박장우는\n어디로 갔을까", text: "2020년, 한 고등학생이 집을 나선 뒤 돌아오지 않았다." },
+      { image: "news2.jpg", bg: "#1f2a44", tag: "01 · 그날", title: "약속이 있다며\n집을 나섰다", text: "코로나19로 거리가 한산하던 2020년. 당시 고등학교 2학년이던 박장우(17) 군은 \"약속이 있다\"며 흰색 와이셔츠 차림으로 집을 나섰다. 오후 4시 12분, 동네 CCTV에 찍힌 모습이 마지막이었다." },
+      { image: "", bg: "#2b2b33", tag: "02 · 지금", title: "6년째\n멈춰 있는 시간", text: "사건은 지금도 풀리지 않았다. 가족은 여전히 전단을 돌리고 있다. 실종 당시 키 179cm, 흰색 와이셔츠 차림. 작은 기억이라도 제보를 기다립니다." }
+    ]
+  },
+  /* ------------------------------------------------------------ */
+  {
+    username: "minjun.k", subtitle: "", avatarText: "민", avatarColor: "#3d6fd6",
+    likes: 87, comments: 4, time: "3시간 전",
+    caption: "시험 끝!! 드디어 농구 🏀", hashtags: "#농구 #시험끝",
+    cards: [
+      { image: "", bg: "linear-gradient(160deg,#ff9a4a,#b8431f)", emoji: "🏀", square: true },
+      { image: "", bg: "linear-gradient(160deg,#4a5a7a,#1c2233)", emoji: "👟", square: true }
+    ]
+  }
+];
+/* ================================================================ */
+
+const HEART = '<path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/>';
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const icon = (inner, cls) => { const t = document.createElement("template"); t.innerHTML = '<svg viewBox="0 0 24 24"' + (cls ? ' class="' + cls + '"' : '') + '>' + inner + '</svg>'; return t.content.firstChild; };
+const ring = (text, color) => { const r = el("div", "ring"); const d = el("div", "", text); d.style.background = color; r.append(d); return r; };
+
+// 스토리 줄
+STORIES.forEach(s => { const st = el("div", "story"); st.append(ring(s.text, s.color), el("span", "", s.name)); document.getElementById("stories").append(st); });
+
+// 게시글
+const feed = document.getElementById("feed");
+let active = null; // ← → 키로 넘길 캐러셀
+
+POSTS.forEach(P => {
+  const post = el("article", "post");
+
+  const head = el("div", "post-head");
+  const who = el("div", "who"); who.append(el("b", "", P.username)); if (P.subtitle) who.append(el("span", "", P.subtitle));
+  head.append(ring(P.avatarText, P.avatarColor), who, icon('<circle cx="5" cy="12" r="1" fill="#111"/><circle cx="12" cy="12" r="1" fill="#111"/><circle cx="19" cy="12" r="1" fill="#111"/>'));
+
+  const wrap = el("div", "carousel-wrap"), car = el("div", "carousel"), dots = el("div", "dots"), counter = el("div", "counter");
+  const multi = P.cards.length > 1;
+  P.cards.forEach(c => {
+    const card = el("div", "card" + (c.square ? " square" : ""));
+    card.style.background = c.bg;
+    if (c.image) { const img = el("img"); img.src = c.image; img.alt = ""; img.draggable = false; card.append(img); }
+    if (c.image && c.title) { card.classList.add("over"); card.append(el("div", "tag", c.tag), el("h2", "", c.title)); if (c.text) card.append(el("p", "", c.text)); }
+    else if (c.image) {}
+    else if (c.emoji) card.append(el("div", "emoji", c.emoji));
+    else { card.append(el("div", "tag", c.tag), el("h2", "", c.title)); if (c.text) card.append(el("p", "", c.text)); }
+    car.append(card); dots.append(el("i"));
+  });
+  const big = icon(HEART, "bigheart");
+  wrap.append(car, big); if (multi) wrap.append(counter);
+
+  const actions = el("div", "actions"), left = el("div", "left");
+  const likeBtn = el("button"); likeBtn.append(icon(HEART));
+  const cBtn = el("button"); cBtn.append(icon('<path d="M20 11.5a8 8 0 0 1-11.8 7L4 20l1.4-4.1A8 8 0 1 1 20 11.5z"/>'));
+  const sBtn = el("button"); sBtn.append(icon('<path d="M21 3 10.5 13.5M21 3l-6.5 18-4-7.5L3 9.5z"/>'));
+  const saveBtn = el("button", "save"); saveBtn.append(icon('<path d="M6 3.5h12v17l-6-4.5-6 4.5z"/>'));
+  left.append(likeBtn, cBtn, sBtn); actions.append(left); if (multi) actions.append(dots); actions.append(saveBtn);
+
+  const meta = el("div", "meta"), likesEl = el("div", "likes"), cap = el("div", "caption");
+  cap.append(el("b", "", P.username), P.caption + "\n", el("span", "hash", P.hashtags));
+  meta.append(likesEl, cap, el("div", "comments", "댓글 " + P.comments + "개 모두 보기"), el("div", "time", P.time));
+
+  post.append(head, wrap, actions, meta); feed.append(post);
+
+  // 넘기기 표시
+  const update = () => {
+    const i = Math.round(car.scrollLeft / car.clientWidth);
+    counter.textContent = (i + 1) + "/" + P.cards.length;
+    [...dots.children].forEach((d, n) => d.classList.toggle("on", n === i));
+  };
+  car.addEventListener("scroll", update, { passive: true }); update();
+
+  // 컴퓨터에서 테스트할 때: 마우스로 끌어서 넘기기
+  if (multi) {
+    let down = false, startX = 0, startLeft = 0;
+    car.addEventListener("mousedown", e => { down = true; active = car; startX = e.pageX; startLeft = car.scrollLeft; car.style.scrollSnapType = "none"; });
+    window.addEventListener("mousemove", e => { if (down) car.scrollLeft = startLeft - (e.pageX - startX); });
+    window.addEventListener("mouseup", e => {
+      if (!down) return; down = false;
+      const moved = startX - e.pageX, w = car.clientWidth;
+      let i = Math.round(startLeft / w); if (moved > 40) i++; else if (moved < -40) i--;
+      car.scrollTo({ left: i * w, behavior: "smooth" });
+      setTimeout(() => car.style.scrollSnapType = "", 400);
+    });
+    if (!active && P.username === "daily_cardnews") active = car;
+  }
+
+  // 좋아요 / 저장 / 두 번 탭
+  let liked = false, likes = P.likes, lastTap = 0;
+  const show = () => likesEl.textContent = "좋아요 " + likes.toLocaleString("ko-KR") + "개";
+  const setLike = v => { if (v === liked) return; liked = v; likes += v ? 1 : -1; likeBtn.classList.toggle("liked", liked); show(); };
+  show();
+  likeBtn.onclick = () => setLike(!liked);
+  saveBtn.onclick = () => saveBtn.classList.toggle("saved");
+  car.addEventListener("click", () => {
+    const now = Date.now();
+    if (now - lastTap < 300) { setLike(true); big.classList.remove("pop"); void big.getBoundingClientRect(); big.classList.add("pop"); }
+    lastTap = now;
+  });
+});
+
+feed.append(el("div", "end", "새 게시물을 모두 확인했습니다 ✓"));
+
+window.addEventListener("keydown", e => {
+  if (!active) return;
+  if (e.key === "ArrowRight") active.scrollBy({ left: active.clientWidth, behavior: "smooth" });
+  if (e.key === "ArrowLeft") active.scrollBy({ left: -active.clientWidth, behavior: "smooth" });
+});
+</script>
+</body>
+</html>
